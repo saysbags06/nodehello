@@ -34,55 +34,33 @@ app.get('/api/data', async (req, res) => {
                     }
                 }
             ],
-            
-
         };
 
         const responsesByStore = {};
 
         for (const store in requestsByStore) {
             const responses = await Promise.all(requestsByStore[store].map(async (item) => {
-                const response = await axios.get(item.url, { headers: item.headers });
-                return response.data;
+                try {
+                    const response = await axios.get(item.url, { headers: item.headers });
+                    return response.data;
+                } catch (error) {
+                    console.error(`Error fetching data for store ${store}: ${error.message}`);
+                    return { error: error.message };
+                }
             }));
 
             responsesByStore[store] = responses;
         }
 
-        const dataByStore = {};
-        for (const store in responsesByStore) {
-            const sellerData = {
-                shopName: responsesByStore[store][0].data.seller.shop_name,
-                sellerlogo: responsesByStore[store][0].data.seller.logo,
-                shopStatus: responsesByStore[store][0].data.seller.shop_status,
-            };
+        // Code untuk pemrosesan data dan respons di sini
 
-            const scoreOverview = {
-                score: responsesByStore[store][1].data.overview.score,
-                rank: responsesByStore[store][1].data.overview.rank,
-                category: responsesByStore[store][1].data.overview.category,
-                metrikdata: responsesByStore[store][1].data.metric.metricGroups
-                // Anda bisa menambahkan lebih banyak bagian yang Anda inginkan dari respons kedua di sini
-            };
-
-            dataByStore[store] = {
-                sellerData: sellerData,
-                scoreOverview: scoreOverview
-            };
-        }
-
-        const sortedData = Object.keys(dataByStore).sort((a, b) => dataByStore[b].scoreOverview.score - dataByStore[a].scoreOverview.score)
-            .reduce((obj, key) => {
-                obj[key] = dataByStore[key];
-                return obj;
-            }, {});
-
-        res.json(sortedData);
+        res.json(responsesByStore);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 const PORT = process.env.PORT || 3000;
 
